@@ -6,11 +6,10 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        "h-9 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100",
+        "h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-cyan-600 focus:ring-4 focus:ring-cyan-100",
         className
       )}
       {...props}
     />
   );
 }
-

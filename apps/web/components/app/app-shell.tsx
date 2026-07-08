@@ -46,18 +46,18 @@ export function AppShell({
   }
 
   return (
-    <main className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-[1600px] gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <div className="xl:sticky xl:top-4 xl:h-[calc(100vh-2rem)]">
+    <main className="min-h-screen px-3 py-3 sm:px-5 sm:py-5 lg:px-8">
+      <div className="mx-auto grid max-w-[1680px] gap-4 xl:grid-cols-[272px_minmax(0,1fr)]">
+        <div className="xl:sticky xl:top-5 xl:h-[calc(100vh-2.5rem)]">
           <Sidebar />
         </div>
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-5">
           <TopBar title={title} description={description} />
           <div
             className={
               controlStatus?.kill_switch_enabled
-                ? "flex flex-wrap items-center justify-between gap-3 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-950"
-                : "flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950"
+                ? "flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/95 px-4 py-3 text-sm text-red-950 shadow-sm"
+                : "flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm text-emerald-950 shadow-sm"
             }
           >
             <div className="flex min-w-0 items-center gap-3">

@@ -108,6 +108,29 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Dashboard" description="High-level paper trading status across terminal, risk, and strategy systems.">
+      <section className="rounded-lg border border-slate-800 bg-slate-950 px-5 py-5 text-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase text-cyan-200">Paper command center</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight">Trade safely before switching anything live.</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+              Market data, order routing, strategy signals, and kill switch controls stay visible in one guarded workspace.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              ["Mode", "PAPER"],
+              ["Broker", "Sandbox"],
+              ["Risk", "On"]
+            ].map(([label, value]) => (
+              <div key={label} className="min-w-[88px] rounded-md border border-slate-800 bg-slate-900/80 px-3 py-3">
+                <div className="text-[11px] uppercase text-slate-400">{label}</div>
+                <div className="mt-1 text-sm font-bold">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {dashboardCardsWithMarketStatus.map((card) => (
           <StatusCard key={card.title} {...card} />
@@ -134,9 +157,9 @@ export default function DashboardPage() {
             <CardContent className="space-y-3 pt-4">
               {sessionHealth.map(({ label, value, icon: ItemIcon }) => {
                 return (
-                  <div key={label} className="flex items-center justify-between rounded-md border border-border p-3">
+                  <div key={label} className="flex items-center justify-between rounded-md border border-border/80 bg-white p-3 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-200">
                         <ItemIcon className="h-4 w-4" />
                       </div>
                       <div>

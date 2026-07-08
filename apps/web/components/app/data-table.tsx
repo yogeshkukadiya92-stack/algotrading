@@ -21,7 +21,7 @@ export function DataTable<T>({
 }) {
   return (
     <Card>
-      <CardHeader className="border-b border-border">
+      <CardHeader className="border-b border-border/80">
         <div>
           <CardTitle>{title}</CardTitle>
           {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
@@ -30,13 +30,13 @@ export function DataTable<T>({
       <CardContent className="px-0 pb-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-muted text-xs uppercase text-muted-foreground">
+            <thead className="bg-slate-50 text-xs uppercase text-muted-foreground">
               <tr>
                 {columns.map((column) => (
                   <th
                     key={column.key}
                     className={cn(
-                      "px-4 py-3 font-medium",
+                      "px-5 py-3 font-semibold tracking-[0.04em]",
                       column.align === "center" && "text-center",
                       column.align === "right" ? "text-right" : "text-left"
                     )}
@@ -46,14 +46,14 @@ export function DataTable<T>({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/80">
               {rows.map((row, index) => (
-                <tr key={index} className="bg-white">
+                <tr key={index} className="bg-white transition-colors hover:bg-slate-50/80">
                   {columns.map((column) => (
                     <td
                       key={column.key}
                       className={cn(
-                        "px-4 py-3 align-middle",
+                        "px-5 py-3.5 align-middle text-slate-700",
                         column.align === "center" && "text-center",
                         column.align === "right" ? "text-right" : "text-left"
                       )}
@@ -70,4 +70,3 @@ export function DataTable<T>({
     </Card>
   );
 }
-

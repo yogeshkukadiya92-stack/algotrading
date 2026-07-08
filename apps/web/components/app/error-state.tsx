@@ -10,9 +10,9 @@ export function ErrorState({
   description: string;
 }) {
   return (
-    <Card className="border-red-200 bg-red-50">
+    <Card className="border-red-200 bg-red-50/95">
       <CardContent className="flex items-start gap-3 px-6 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-700">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-red-100 text-red-700 ring-1 ring-red-200">
           <AlertTriangle className="h-4 w-4" />
         </div>
         <div>
@@ -23,4 +23,3 @@ export function ErrorState({
     </Card>
   );
 }
-

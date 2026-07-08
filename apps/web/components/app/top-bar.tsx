@@ -34,13 +34,13 @@ export function TopBar({
 
   return (
     <header className="space-y-3">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
+      <div className="rounded-lg border border-amber-200 bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm">
         <span className="font-semibold">Paper mode active. Live trading disabled.</span>
       </div>
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-white px-4 py-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      <div className="flex flex-col gap-4 rounded-lg border border-border/80 bg-white/95 px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_34px_rgba(15,23,42,0.04)] backdrop-blur xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">{title}</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative min-w-[220px]">
@@ -59,7 +59,7 @@ export function TopBar({
             <Link
               href="/alerts"
               aria-label="Notifications"
-              className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border bg-white text-muted-foreground shadow-sm transition hover:-translate-y-px hover:bg-slate-50 hover:text-foreground"
             >
               <Bell className="h-4 w-4" />
               {unreadAlerts ? (
