@@ -16,7 +16,7 @@ if str(API_ROOT) not in sys.path:
 
 from app.db.session import SessionLocal
 from app.core.security import hash_password
-from app.models import RiskProfile, User
+from app.models import BrokerAccount, RiskProfile, User
 
 
 def seed_demo_data(session_factory: Callable[[], Session] | None = None) -> None:
@@ -56,8 +56,29 @@ def seed_demo_data(session_factory: Callable[[], Session] | None = None) -> None
                 )
             )
 
+        existing_account = session.scalar(
+            select(BrokerAccount).where(
+                BrokerAccount.user_id == existing_user.id,
+                BrokerAccount.id == "paper_zerodha_001",
+            )
+        )
+        if existing_account is None:
+            session.add(
+                BrokerAccount(
+                    id="paper_zerodha_001",
+                    user_id=existing_user.id,
+                    broker_name="paper",
+                    display_name="Paper Trading Account",
+                    encrypted_api_key="seeded-paper-key",
+                    encrypted_access_token="seeded-paper-token",
+                    is_active=True,
+                    is_paper=True,
+                    static_ip_verified=True,
+                )
+            )
+
         session.commit()
-        print("Seeded demo user and default risk profile.")
+        print("Seeded demo user, default risk profile, and paper broker account.")
     finally:
         session.close()
 
