@@ -1,0 +1,105 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tradepilot}
+      POSTGRES_USER: ${POSTGRES_USER:-tradepilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    volumes:
+      - redis_data:/data
+      - ./infra/redis/redis.prod.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://tradepilot:${POSTGRES_PASSWORD}@postgres:5432/tradepilot}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
+      ENABLE_LIVE_BROKER_ORDERS: ${ENABLE_LIVE_BROKER_ORDERS:-false}
+      ENABLE_AUTO_TRADING: ${ENABLE_AUTO_TRADING:-false}
+      AUTO_TRADING_ENABLED: ${AUTO_TRADING_ENABLED:-false}
+      PAPER_TRADING: ${PAPER_TRADING:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost"]}
+      ZERODHA_API_KEY: ${ZERODHA_API_KEY:-}
+      ZERODHA_ACCESS_TOKEN: ${ZERODHA_ACCESS_TOKEN:-}
+      ZERODHA_REDIRECT_URI: ${ZERODHA_REDIRECT_URI:-}
+      ZERODHA_API_BASE_URL: ${ZERODHA_API_BASE_URL:-https://api.kite.trade}
+      UPSTOX_API_KEY: ${UPSTOX_API_KEY:-}
+      UPSTOX_ACCESS_TOKEN: ${UPSTOX_ACCESS_TOKEN:-}
+      UPSTOX_REDIRECT_URI: ${UPSTOX_REDIRECT_URI:-}
+      UPSTOX_API_BASE_URL: ${UPSTOX_API_BASE_URL:-https://api.upstox.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.prod
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api}
+      NEXT_PUBLIC_DEFAULT_PAPER_BROKER_ACCOUNT_ID: ${NEXT_PUBLIC_DEFAULT_PAPER_BROKER_ACCOUNT_ID:-paper_zerodha_001}
+      NEXT_PUBLIC_DEFAULT_LIVE_BROKER_ACCOUNT_ID: ${NEXT_PUBLIC_DEFAULT_LIVE_BROKER_ACCOUNT_ID:-live_zerodha_001}
+      NEXT_PUBLIC_ENABLE_LIVE_AUTO_TRADING: ${NEXT_PUBLIC_ENABLE_LIVE_AUTO_TRADING:-false}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./infra/nginx/tradepilot.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

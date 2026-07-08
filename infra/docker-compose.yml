@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tradepilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tradepilot}
+      POSTGRES_DB: ${POSTGRES_DB:-tradepilot}
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: ../apps/web
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://tradepilot:tradepilot@postgres:5432/tradepilot}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_SECRET: ${JWT_SECRET:-replace-with-jwt-secret}
+      LIVE_TRADING_ENABLED: ${LIVE_TRADING_ENABLED:-false}
+      ENABLE_LIVE_BROKER_ORDERS: ${ENABLE_LIVE_BROKER_ORDERS:-false}
+    ports:
+      - "8000:8000"

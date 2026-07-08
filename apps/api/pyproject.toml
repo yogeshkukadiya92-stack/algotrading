@@ -1,0 +1,11 @@
+[project]
+name = "tradepilot-app-api"
+version = "0.1.0"
+description = "FastAPI backend for TradePilot India"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+pythonpath = ["."]
+addopts = "-q"
+
