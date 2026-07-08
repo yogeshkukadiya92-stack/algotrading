@@ -22,7 +22,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY apps/api/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM node:22-slim AS runtime
+FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV APP_ENV=production
@@ -40,6 +40,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 nginx supervisor gettext-base ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
+COPY --from=web-deps /usr/local/bin/node /usr/local/bin/node
 COPY --from=api-deps /opt/venv /opt/venv
 
 COPY apps/api /app/apps/api
