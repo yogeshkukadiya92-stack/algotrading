@@ -1,4 +1,5 @@
 from app.core.config import get_settings
+from pydantic import ValidationError
 
 
 def test_live_trading_enabled_defaults_to_false(monkeypatch) -> None:
@@ -49,3 +50,14 @@ def test_database_url_normalizes_railway_postgres_urls(monkeypatch) -> None:
     settings = get_settings()
 
     assert settings.database_url == "postgresql+psycopg://user:pass@db-host:5432/tradepilot"
+
+
+def test_database_url_rejects_mongodb_urls(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "mongodb://mongo-user:mongo-pass@mongo-host:27017/tradepilot")
+
+    try:
+        get_settings()
+    except ValidationError as exc:
+        assert "PostgreSQL DATABASE_URL" in str(exc)
+    else:
+        raise AssertionError("Expected MongoDB DATABASE_URL to be rejected")

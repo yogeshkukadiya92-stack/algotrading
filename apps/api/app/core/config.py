@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def normalize_postgres_driver(cls, value: str) -> str:
+        if isinstance(value, str) and value.startswith(("mongodb://", "mongodb+srv://")):
+            raise ValueError(
+                "TradePilot India requires a PostgreSQL DATABASE_URL. MongoDB is not supported by this codebase."
+            )
         if isinstance(value, str) and value.startswith("postgres://"):
             return value.replace("postgres://", "postgresql+psycopg://", 1)
         if isinstance(value, str) and value.startswith("postgresql://") and "+psycopg" not in value:

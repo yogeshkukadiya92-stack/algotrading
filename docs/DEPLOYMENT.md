@@ -63,6 +63,28 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec api al
 
 Expose only Nginx publicly. PostgreSQL and Redis should stay on the private Docker network.
 
+## Railway Notes
+
+Railway deployment for this repository must use:
+
+- One application service built from the repo `Dockerfile`
+- One PostgreSQL service
+- One Redis service
+
+Do not attach MongoDB as `DATABASE_URL` for this app. TradePilot India currently uses PostgreSQL with SQLAlchemy models and Alembic migrations, so a MongoDB connection string will fail during startup.
+
+Recommended Railway variables:
+
+- `DATABASE_URL` from the Railway PostgreSQL service
+- `REDIS_URL` from the Railway Redis service
+- `JWT_SECRET` as a manually created secret
+- `APP_ENV=production`
+- `LIVE_TRADING_ENABLED=false`
+- `ENABLE_LIVE_BROKER_ORDERS=false`
+- `ENABLE_AUTO_TRADING=false`
+- `AUTO_TRADING_ENABLED=false`
+- `PAPER_TRADING=true`
+
 ## Static IP Requirement
 
 Live broker integrations may require static IP whitelisting. This phase only includes a placeholder:

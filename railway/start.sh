@@ -8,6 +8,18 @@ export INTERNAL_API_BASE_URL="${INTERNAL_API_BASE_URL:-http://127.0.0.1:${INTERN
 export NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL:-/api}"
 export PYTHONPATH="/app/apps/api:${PYTHONPATH:-}"
 
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "TradePilot India requires DATABASE_URL to point to PostgreSQL. Add a Railway PostgreSQL service and expose its DATABASE_URL to this app." >&2
+  exit 1
+fi
+
+case "${DATABASE_URL}" in
+  mongodb://*|mongodb+srv://*)
+    echo "TradePilot India cannot start with a MongoDB DATABASE_URL. This codebase uses PostgreSQL, SQLAlchemy, and Alembic migrations. Attach a Railway PostgreSQL service and set DATABASE_URL from it." >&2
+    exit 1
+    ;;
+esac
+
 mkdir -p /tmp/nginx
 envsubst '${PORT} ${INTERNAL_API_PORT} ${INTERNAL_WEB_PORT}' \
   < /app/railway/nginx.conf.template \
