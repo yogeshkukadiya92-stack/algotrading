@@ -41,3 +41,11 @@ def test_paper_trading_defaults_to_true(monkeypatch) -> None:
     settings = get_settings()
 
     assert settings.paper_trading is True
+
+
+def test_database_url_normalizes_railway_postgres_urls(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:pass@db-host:5432/tradepilot")
+
+    settings = get_settings()
+
+    assert settings.database_url == "postgresql+psycopg://user:pass@db-host:5432/tradepilot"
