@@ -1,4 +1,5 @@
-import { getApiBaseUrl } from "@/lib/auth";
+import { getApiBaseUrl } from "./auth";
+import { resolveMarketStreamUrl } from "./market-data-url";
 
 export type MarketTick = {
   symbol: string;
@@ -35,12 +36,7 @@ export async function fetchWatchlist(): Promise<MarketTick[]> {
 }
 
 export function getMarketStreamUrl() {
-  const apiBase = getApiBaseUrl();
-  const url = new URL(apiBase);
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = "/market/stream";
-  url.search = "";
-  return url.toString();
+  return resolveMarketStreamUrl(getApiBaseUrl(), typeof window === "undefined" ? undefined : window.location.origin);
 }
 
 export function formatPrice(value: string | number) {
