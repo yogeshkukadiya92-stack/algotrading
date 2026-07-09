@@ -7,7 +7,7 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.core.security import create_access_token, hash_password
-from app.models import AuditEvent, BrokerAccount, Order, RiskProfile, Strategy, SystemControl, User
+from app.models import AuditEvent, BrokerAccount, Order, OrderEvent, RiskProfile, Strategy, SystemControl, User
 
 
 def create_user(db_session) -> tuple[User, str]:
@@ -182,6 +182,24 @@ def test_existing_open_paper_order_can_be_cancelled_with_kill_switch_enabled(cli
 
     assert cancel_response.status_code == 200
     assert cancel_response.json()["order"]["status"] == "CANCELLED"
+
+
+def test_reset_paper_session_cancels_open_orders_and_audits(client, db_session) -> None:
+    user, token = create_user(db_session)
+    account = create_paper_setup(db_session, user)
+    create_response = client.post("/orders", headers={"Authorization": f"Bearer {token}"}, json=order_payload(account))
+    order_id = create_response.json()["order"]["id"]
+
+    response = client.post("/controls/paper-session/reset", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 200
+    assert response.json()["cancelled_orders"] == 1
+    order = db_session.get(Order, order_id)
+    assert order.status == "CANCELLED"
+    event = db_session.scalar(select(OrderEvent).where(OrderEvent.order_id == order_id, OrderEvent.event_type == "PAPER_SESSION_RESET"))
+    assert event is not None
+    audit = db_session.scalar(select(AuditEvent).where(AuditEvent.user_id == user.id, AuditEvent.event_type == "controls.paper_session_reset"))
+    assert audit is not None
 
 
 def test_kill_switch_stops_running_strategies(client, db_session) -> None:

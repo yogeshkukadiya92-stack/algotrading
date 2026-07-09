@@ -3,6 +3,7 @@
 import { Bell, LogOut, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ export function TopBar({
 }) {
   const router = useRouter();
   const [unreadAlerts, setUnreadAlerts] = useState(0);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     void fetchAlerts()
@@ -30,6 +32,35 @@ export function TopBar({
   function handleLogout() {
     clearAuthToken();
     router.replace("/login");
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = query.trim();
+    if (!value) {
+      return;
+    }
+
+    const routeAliases: Record<string, string> = {
+      alert: "/alerts",
+      alerts: "/alerts",
+      broker: "/brokers",
+      brokers: "/brokers",
+      dashboard: "/dashboard",
+      log: "/logs",
+      logs: "/logs",
+      option: "/option-chain",
+      options: "/option-chain",
+      orders: "/orders",
+      positions: "/positions",
+      risk: "/risk",
+      settings: "/settings",
+      strategies: "/strategies",
+      strategy: "/strategies",
+      watchlist: "/watchlist"
+    };
+    const target = routeAliases[value.toLowerCase()];
+    router.push(target ?? `/watchlist?symbol=${encodeURIComponent(value.toUpperCase())}`);
   }
 
   return (
@@ -43,10 +74,16 @@ export function TopBar({
           <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-[220px]">
+          <form className="relative min-w-[220px]" onSubmit={handleSearchSubmit}>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input aria-label="Search" className="pl-9" placeholder="Search symbols, orders, logs" />
-          </div>
+            <Input
+              aria-label="Search"
+              className="pl-9"
+              placeholder="Search symbols, orders, logs"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </form>
           <div className="flex items-center gap-2">
             <Badge tone="green">
               <ShieldCheck className="mr-1 h-3.5 w-3.5" />

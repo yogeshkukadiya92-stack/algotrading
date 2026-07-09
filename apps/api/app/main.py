@@ -14,7 +14,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.logs import router as logs_router
 from app.api.routes.market import router as market_router
 from app.api.routes.options import router as options_router
-from app.api.routes.orders import router as orders_router
+from app.api.routes.orders import positions_router, router as orders_router
 from app.api.routes.risk import router as risk_router
 from app.api.routes.strategies import router as strategies_router
 from app.core.config import get_settings
@@ -101,6 +101,7 @@ def create_app() -> FastAPI:
     app.include_router(market_router)
     app.include_router(options_router)
     app.include_router(orders_router)
+    app.include_router(positions_router)
     app.include_router(risk_router)
     app.include_router(strategies_router)
     return app

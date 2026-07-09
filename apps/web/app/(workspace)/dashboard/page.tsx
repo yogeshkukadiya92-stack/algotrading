@@ -1,22 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Activity, DatabaseZap, ShieldCheck } from "lucide-react";
+import { Activity, CircleDollarSign, DatabaseZap, Layers3, PlugZap, ShieldCheck, Siren, WalletCards } from "lucide-react";
 
 import { AppShell } from "@/components/app/app-shell";
 import { DataTable } from "@/components/app/data-table";
 import { StatusCard } from "@/components/app/status-card";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { reportMarketDataDisconnected } from "@/lib/alerts-api";
+import { fetchAuditLogs, formatLogTime, reportMarketDataDisconnected, type AuditLog } from "@/lib/alerts-api";
 import { fetchControlStatus, formatControlTime, type ControlStatus } from "@/lib/controls-api";
-import { dashboardCards, logsRows, statusBadge, watchlistRows } from "@/lib/mock-data";
 import { fetchWatchlist, formatPrice, getMarketStreamUrl, type MarketTick } from "@/lib/market-data";
+import { fetchOrders, fetchPositions, type TradingOrder, type TradingPosition } from "@/lib/trading-api";
+
+function statusBadge(value: string) {
+  const tone = /ready|protected|live|paper|on|filled|approved/i.test(value)
+    ? "green"
+    : /offline|active|rejected|blocked/i.test(value)
+      ? "red"
+      : "amber";
+  return <Badge tone={tone}>{value}</Badge>;
+}
+
+function signedCurrency(value: number) {
+  const formatted = `Rs ${Math.abs(value).toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`;
+  return value < 0 ? `-${formatted}` : formatted;
+}
 
 export default function DashboardPage() {
   const [ticks, setTicks] = useState<MarketTick[]>([]);
   const [streamStatus, setStreamStatus] = useState<"connecting" | "live" | "offline">("connecting");
   const [controlStatus, setControlStatus] = useState<ControlStatus | null>(null);
+  const [orders, setOrders] = useState<TradingOrder[]>([]);
+  const [positions, setPositions] = useState<TradingPosition[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +63,15 @@ export default function DashboardPage() {
     void fetchControlStatus()
       .then(setControlStatus)
       .catch(() => setControlStatus(null));
+    void fetchOrders()
+      .then(setOrders)
+      .catch(() => setOrders([]));
+    void fetchPositions()
+      .then(setPositions)
+      .catch(() => setPositions([]));
+    void fetchAuditLogs()
+      .then((events) => setAuditLogs(events.slice(0, 3)))
+      .catch(() => setAuditLogs([]));
 
     const socket = new WebSocket(getMarketStreamUrl());
     socket.onopen = () => setStreamStatus("live");
@@ -61,29 +88,69 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const dashboardCardsWithMarketStatus = useMemo(
-    () =>
-      dashboardCards.map((card) =>
-        card.title === "Market Data Status"
-          ? {
-              ...card,
-              value: streamStatus === "live" ? "Live mock feed" : "Mock feed offline",
-              helper: streamStatus === "live" ? "WebSocket ticks updating" : "Last REST snapshot retained",
-              tone: streamStatus === "live" ? ("green" as const) : ("amber" as const)
-            }
-          : card.title === "Kill Switch Status"
-            ? {
-                ...card,
-                value: controlStatus?.kill_switch_enabled ? "ACTIVE" : "Ready",
-                helper: controlStatus?.kill_switch_enabled
-                  ? controlStatus.reason ?? "Emergency stop enabled"
-                  : "New orders allowed in PAPER mode",
-                tone: controlStatus?.kill_switch_enabled ? ("red" as const) : ("green" as const)
-              }
-          : card
-      ),
-    [controlStatus, streamStatus]
-  );
+  const openOrders = orders.filter((order) => !["CANCELLED", "FILLED", "RISK_REJECTED", "REJECTED"].includes(order.status));
+  const realizedPnl = positions.reduce((sum, position) => sum + Number(position.realized_pnl), 0);
+  const unrealizedPnl = positions.reduce((sum, position) => sum + Number(position.unrealized_pnl), 0);
+  const dashboardCardsWithMarketStatus = [
+    {
+      title: "Today P&L",
+      value: signedCurrency(realizedPnl + unrealizedPnl),
+      helper: `${signedCurrency(realizedPnl)} realized`,
+      tone: realizedPnl + unrealizedPnl < 0 ? ("red" as const) : ("green" as const),
+      icon: CircleDollarSign
+    },
+    {
+      title: "Open Positions",
+      value: String(positions.length),
+      helper: `${openOrders.length} open order${openOrders.length === 1 ? "" : "s"}`,
+      tone: "blue" as const,
+      icon: Layers3
+    },
+    {
+      title: "Active Strategies",
+      value: "Paper only",
+      helper: "Strategy live mode remains gated",
+      tone: "amber" as const,
+      icon: ShieldCheck
+    },
+    {
+      title: "Broker Connection",
+      value: "Read-only",
+      helper: "Paper routing does not need broker login",
+      tone: "blue" as const,
+      icon: PlugZap
+    },
+    {
+      title: "Risk Status",
+      value: "Protected",
+      helper: "Orders pass risk engine",
+      tone: "green" as const,
+      icon: ShieldCheck
+    },
+    {
+      title: "Market Data Status",
+      value: streamStatus === "live" ? "Paper feed live" : "Feed reconnecting",
+      helper: streamStatus === "live" ? "WebSocket ticks updating" : "Last REST snapshot retained",
+      tone: streamStatus === "live" ? ("green" as const) : ("amber" as const),
+      icon: DatabaseZap
+    },
+    {
+      title: "Kill Switch Status",
+      value: controlStatus?.kill_switch_enabled ? "ACTIVE" : "Ready",
+      helper: controlStatus?.kill_switch_enabled
+        ? controlStatus.reason ?? "Emergency stop enabled"
+        : "New orders allowed in PAPER mode",
+      tone: controlStatus?.kill_switch_enabled ? ("red" as const) : ("green" as const),
+      icon: Siren
+    },
+    {
+      title: "Paper Wallet",
+      value: `${orders.length}`,
+      helper: "Total authenticated order records",
+      tone: "neutral" as const,
+      icon: WalletCards
+    }
+  ];
 
   const marketRows = ticks.length
     ? ticks.map((tick) => ({
@@ -93,17 +160,17 @@ export default function DashboardPage() {
         volume: tick.volume.toLocaleString("en-IN"),
         signal: tick.segment
       }))
-    : watchlistRows;
+    : [];
 
   const sessionHealth: Array<{ label: string; value: string; icon: LucideIcon }> = [
     { label: "Risk engine", value: "Protected", icon: ShieldCheck },
-    { label: "Mock market feed", value: streamStatus === "live" ? "Live mock feed" : "Connecting", icon: DatabaseZap },
+    { label: "Paper market feed", value: streamStatus === "live" ? "Live paper feed" : "Connecting", icon: DatabaseZap },
     {
       label: "Kill switch",
       value: controlStatus?.kill_switch_enabled ? `Active · ${formatControlTime(controlStatus.enabled_at)}` : "Ready",
       icon: ShieldCheck
     },
-    { label: "Audit stream", value: "Paper-only events", icon: Activity }
+    { label: "Audit stream", value: auditLogs.length ? "Live backend events" : "No recent events", icon: Activity }
   ];
 
   return (
@@ -139,7 +206,7 @@ export default function DashboardPage() {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <DataTable
           title="Watchlist Snapshot"
-          description="Mock market pulse for the current session."
+          description="Paper market pulse for the current session."
           rows={marketRows}
           columns={[
             { key: "symbol", header: "Symbol", render: (row) => <span className="font-semibold">{row.symbol}</span> },
@@ -175,11 +242,11 @@ export default function DashboardPage() {
           </Card>
           <DataTable
             title="Recent Audit Events"
-            rows={logsRows.slice(0, 3)}
+            rows={auditLogs}
             columns={[
-              { key: "time", header: "Time", render: (row) => row.time },
-              { key: "event", header: "Event", render: (row) => row.event },
-              { key: "result", header: "Result", align: "right", render: (row) => statusBadge(row.result) }
+              { key: "time", header: "Time", render: (row) => formatLogTime(row.created_at) },
+              { key: "event", header: "Event", render: (row) => row.event_type },
+              { key: "result", header: "Entity", align: "right", render: (row) => statusBadge(row.entity_type) }
             ]}
           />
         </div>

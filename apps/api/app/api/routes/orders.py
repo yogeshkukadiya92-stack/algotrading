@@ -1,9 +1,16 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
-from app.models import User
-from app.schemas.orders import OrderActionResponse, OrderCreateRequest, OrderDetailResponse, OrderModifyRequest
+from app.models import Position, User
+from app.schemas.orders import (
+    OrderActionResponse,
+    OrderCreateRequest,
+    OrderDetailResponse,
+    OrderModifyRequest,
+    PositionResponse,
+)
 from app.services.order_management import (
     DuplicateCorrelationError,
     DuplicateOrderRequestError,
@@ -12,6 +19,7 @@ from app.services.order_management import (
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
+positions_router = APIRouter(prefix="/positions", tags=["positions"])
 
 
 @router.post("", response_model=OrderActionResponse, status_code=status.HTTP_201_CREATED)
@@ -87,3 +95,14 @@ def modify_order(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     return OrderActionResponse(order=OrderDetailResponse.model_validate(order), message=order.status)
+
+
+@positions_router.get("", response_model=list[PositionResponse])
+def list_positions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[PositionResponse]:
+    positions = db.scalars(
+        select(Position).where(Position.user_id == current_user.id).order_by(Position.updated_at.desc())
+    ).all()
+    return [PositionResponse.model_validate(position) for position in positions]

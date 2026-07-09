@@ -130,3 +130,18 @@ class OrderDetailResponse(OrderResponse):
 class OrderActionResponse(BaseModel):
     order: OrderDetailResponse
     message: str
+
+
+class PositionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    broker_account_id: str
+    symbol: str
+    quantity: int
+    average_price: Decimal
+    ltp: Decimal
+    realized_pnl: Decimal
+    unrealized_pnl: Decimal
+    product_type: str
+    updated_at: datetime

@@ -27,3 +27,9 @@ class ControlStatusResponse(BaseModel):
     reason: str | None
     enabled_at: datetime | None
     disabled_at: datetime | None
+
+
+class PaperSessionResetResponse(BaseModel):
+    reset_at: datetime
+    cancelled_orders: int
+    message: str

@@ -25,6 +25,17 @@ import {
 } from "@/lib/options-chain";
 
 const underlyings: OptionUnderlying[] = ["NIFTY", "BANKNIFTY"];
+const BASKET_STORAGE_KEY = "tradepilot.paper.option_basket";
+
+type BasketItem = {
+  id: string;
+  symbol: string;
+  side: "CE" | "PE";
+  strikePrice: string;
+  price: string;
+  underlying: string;
+  expiry: string;
+};
 
 function getAtmStrike(chain: OptionChain | null) {
   if (!chain?.strikes.length) {
@@ -50,9 +61,25 @@ export default function OptionChainPage() {
   const [expiry, setExpiry] = useState(optionExpiries[0]);
   const [chain, setChain] = useState<OptionChain | null>(null);
   const [ticketDraft, setTicketDraft] = useState<OrderTicketDraft | null>(null);
+  const [basket, setBasket] = useState<BasketItem[]>([]);
   const [basketMessage, setBasketMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const storedBasket = window.localStorage.getItem(BASKET_STORAGE_KEY);
+    if (storedBasket) {
+      try {
+        setBasket(JSON.parse(storedBasket) as BasketItem[]);
+      } catch {
+        window.localStorage.removeItem(BASKET_STORAGE_KEY);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(basket));
+  }, [basket]);
 
   useEffect(() => {
     let isMounted = true;
@@ -116,7 +143,32 @@ export default function OptionChainPage() {
     if (!chain) {
       return;
     }
-    setBasketMessage(`${optionSymbol(chain.underlying, chain.expiry, strike.strike_price, side)} added to paper basket placeholder.`);
+    const symbol = optionSymbol(chain.underlying, chain.expiry, strike.strike_price, side);
+    const item: BasketItem = {
+      id: `${symbol}-${Date.now()}`,
+      symbol,
+      side,
+      strikePrice: strike.strike_price,
+      price: side === "CE" ? strike.ce_ask : strike.pe_ask,
+      underlying: chain.underlying,
+      expiry: chain.expiry
+    };
+    setBasket((current) => [item, ...current]);
+    setBasketMessage(`${symbol} added to paper basket.`);
+  }
+
+  function basketToTicket(item: BasketItem) {
+    setTicketDraft({
+      symbol: item.symbol,
+      exchange: "NFO",
+      segment: "FNO",
+      side: "BUY",
+      price: item.price
+    });
+  }
+
+  function removeBasketItem(id: string) {
+    setBasket((current) => current.filter((item) => item.id !== id));
   }
 
   return (
@@ -259,6 +311,42 @@ export default function OptionChainPage() {
           {basketMessage ? (
             <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">{basketMessage}</div>
           ) : null}
+          <Card>
+            <CardHeader className="border-b border-border">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>Paper Basket</CardTitle>
+                <Button size="sm" variant="secondary" onClick={() => setBasket([])} disabled={basket.length === 0}>
+                  Clear
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {basket.length === 0 ? (
+                <div className="px-5 py-6 text-sm text-muted-foreground">No basket legs yet. Add CE or PE contracts from the option chain.</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {basket.map((item) => (
+                    <div key={item.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="font-semibold">{item.symbol}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {item.underlying} {item.expiry} | {item.side} {formatOptionNumber(item.strikePrice, 0)} | Ask {formatOptionNumber(item.price)}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => basketToTicket(item)}>
+                          Ticket
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={() => removeBasketItem(item.id)}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <OrderTicket draft={ticketDraft} />

@@ -69,6 +69,25 @@ export type OrderActionResponse = {
   message: string;
 };
 
+export type TradingPosition = {
+  id: string;
+  broker_account_id: string;
+  symbol: string;
+  quantity: number;
+  average_price: string;
+  ltp: string;
+  realized_pnl: string;
+  unrealized_pnl: string;
+  product_type: ProductType;
+  updated_at: string;
+};
+
+export type PaperSessionResetResponse = {
+  reset_at: string;
+  cancelled_orders: number;
+  message: string;
+};
+
 export function getDefaultPaperBrokerAccountId() {
   return process.env.NEXT_PUBLIC_DEFAULT_PAPER_BROKER_ACCOUNT_ID ?? "paper_zerodha_001";
 }
@@ -114,6 +133,17 @@ export async function fetchOrders(): Promise<TradingOrder[]> {
   return parseResponse<TradingOrder[]>(response);
 }
 
+export async function fetchPositions(): Promise<TradingPosition[]> {
+  const response = await fetch(`${getApiBaseUrl()}/positions`, {
+    headers: {
+      Authorization: `Bearer ${requireToken()}`
+    },
+    cache: "no-store"
+  });
+
+  return parseResponse<TradingPosition[]>(response);
+}
+
 export async function cancelOrder(orderId: string): Promise<OrderActionResponse> {
   const response = await fetch(`${getApiBaseUrl()}/orders/${orderId}/cancel`, {
     method: "POST",
@@ -136,6 +166,17 @@ export async function modifyOrder(orderId: string, payload: OrderModifyPayload):
   });
 
   return parseResponse<OrderActionResponse>(response);
+}
+
+export async function resetPaperSession(): Promise<PaperSessionResetResponse> {
+  const response = await fetch(`${getApiBaseUrl()}/controls/paper-session/reset`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${requireToken()}`
+    }
+  });
+
+  return parseResponse<PaperSessionResetResponse>(response);
 }
 
 export function orderRiskMessage(order: TradingOrder) {
